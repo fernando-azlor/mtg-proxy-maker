@@ -47,10 +47,10 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-    - api
-  volumes:
-    - ./frontend:/app
-    - /app/node_modules
+      - api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
 volumes:
   postgres_data:

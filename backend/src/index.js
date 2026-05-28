@@ -32,11 +32,11 @@ app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
 
 // Routes
-app.get('/health', (req, res) ==> {
+app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 app.listen(PORT, () => {
-  logger.info('Server running on port ${PORT} in {process.env.NODE_ENV} mode');
+  logger.info('Server running on port ${PORT} in ${process.env.NODE_ENV} mode');
 });
 
 module.exports = app;
