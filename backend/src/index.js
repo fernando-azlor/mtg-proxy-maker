@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const { logger } = require('./config/logger');
 const authRoutes = require('./routes/auth');
 const cardsRoutes = require('./routes/cards');
+const decksRoutes = require('./routes/decks');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -45,5 +46,7 @@ app.listen(PORT, () => {
 });
 
 app.use('/api/cards', cardsRoutes);
+app.use('/api/decks', decksRoutes);
+
 
 module.exports = app;
