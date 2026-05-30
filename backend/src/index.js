@@ -5,6 +5,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { logger } = require('./config/logger');
 const authRoutes = require('./routes/auth');
+const cardsRoutes = require('./routes/cards');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -42,5 +43,7 @@ app.use('/api/auth', authRoutes);
 app.listen(PORT, () => {
   logger.info('Server running on port ${PORT} in ${process.env.NODE_ENV} mode');
 });
+
+app.use('/api/cards', cardsRoutes);
 
 module.exports = app;
