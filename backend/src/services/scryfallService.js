@@ -17,16 +17,34 @@ const validateScryfallUrl = (url) => {
   }
 };
 
-const searchCards = async (query, page = 1) => {
-  if (!query || query.trim().length < 2) {
-    throw new Error('La búsqueda debe tener al menos 2 caracteres');
+const searchCards = async (query, page = 1, colors = [], cmc = null) => {
+  const parts = [];
+
+  const sanitizedQuery = (query || '').trim().slice(0, 100);
+  if (sanitizedQuery.length >= 2) {
+    parts.push(sanitizedQuery);
   }
 
-  // Sanitizar query - solo caracteres permitidos
-  const sanitizedQuery = query.trim().slice(0, 100);
+  // Filtro de colores: color:WUBRGC
+  const validColors = (colors || []).filter(c => /^[WUBRGC]$/.test(c));
+  if (validColors.length > 0) {
+    parts.push(`color:${validColors.join('')}`);
+  }
+
+  // Filtro de coste de maná
+  const cmcNum = parseInt(cmc, 10);
+  if (!isNaN(cmcNum) && cmcNum >= 0 && cmcNum <= 20) {
+    parts.push(`mv=${cmcNum}`);
+  }
+
+  if (parts.length === 0) {
+    throw new Error('Introduce un nombre o selecciona al menos un filtro');
+  }
+
+  const scryfallQuery = parts.join(' ');
 
   const url = new URL(`${SCRYFALL_BASE_URL}/cards/search`);
-  url.searchParams.set('q', sanitizedQuery);
+  url.searchParams.set('q', scryfallQuery);
   url.searchParams.set('page', page);
   url.searchParams.set('order', 'name');
 

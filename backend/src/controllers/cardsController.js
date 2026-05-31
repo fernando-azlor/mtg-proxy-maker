@@ -8,12 +8,18 @@ const search = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { q, page = 1 } = req.query;
+  const { q, page = 1, colors, cmc } = req.query;
+
+  // colors llega como string separado por comas "W,U,R" → convertir a array
+  const colorsArray = colors ? colors.split(',').filter(Boolean) : [];
 
   try {
-    const result = await searchCards(q, parseInt(page));
+    const result = await searchCards(q, parseInt(page), colorsArray, cmc);
     return res.status(200).json(result);
   } catch (err) {
+    if (err.message?.includes('filtro') || err.message?.includes('caracteres')) {
+      return res.status(400).json({ error: err.message });
+    }
     logger.error({ message: 'Error buscando cartas', error: err.message });
     return res.status(500).json({ error: 'Error al buscar cartas' });
   }
