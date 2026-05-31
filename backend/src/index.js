@@ -7,6 +7,7 @@ const { logger } = require('./config/logger');
 const authRoutes = require('./routes/auth');
 const cardsRoutes = require('./routes/cards');
 const decksRoutes = require('./routes/decks');
+const exportRoutes = require('./routes/export');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -47,6 +48,6 @@ app.listen(PORT, () => {
 
 app.use('/api/cards', cardsRoutes);
 app.use('/api/decks', decksRoutes);
-
+app.use('/api/decks', exportRoutes);
 
 module.exports = app;

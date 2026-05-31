@@ -133,7 +133,7 @@ export default function DeckBuilderPage() {
               disabled={saving}
               className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
             >
-              {saving ? 'Guardando...' : saved ? '✓ Guardado' : 'Guardar'}
+              {saving ? 'Guardando...' : saved ? 'Guardado' : 'Guardar'}
             </button>
             <button
               onClick={handleExportPdf}
