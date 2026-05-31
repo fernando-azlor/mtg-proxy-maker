@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import CardItem from './CardItem';
+import ArtSelectorModal from './ArtSelectorModal';
+import { useAuth } from '../context/AuthContext';
 
 const COLOR_OPTIONS = [
   { code: 'W', label: 'Blanco', bg: 'bg-yellow-100', text: 'text-yellow-900', border: 'border-yellow-300', activeBg: 'bg-yellow-200' },
@@ -12,7 +14,7 @@ const COLOR_OPTIONS = [
   { code: 'C', label: 'Incolor',bg: 'bg-gray-400',   text: 'text-gray-900',   border: 'border-gray-300',   activeBg: 'bg-gray-300'   },
 ];
 
-function CardPreviewModal({ card, onClose, onAdd, isInDeck }) {
+function CardPreviewModal({ card, onClose, onAdd, onSelectArt, isInDeck }) {
   // Cerrar con Escape
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
@@ -70,19 +72,31 @@ function CardPreviewModal({ card, onClose, onAdd, isInDeck }) {
           <p className="text-red-400 text-xs mt-2">⚠ No legal en Commander</p>
         )}
 
-        <button
-          onClick={() => { onAdd(card); onClose(); }}
-          disabled={isInDeck}
-          className="w-full mt-4 bg-amber-500 hover:bg-amber-400 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-gray-900 font-semibold py-2 rounded-lg transition-colors text-sm"
-        >
-          {isInDeck ? 'Ya está en el mazo' : '+ Añadir al mazo'}
-        </button>
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={() => { onAdd(card); onClose(); }}
+            disabled={isInDeck}
+            className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-gray-900 font-semibold py-2 rounded-lg transition-colors text-sm"
+          >
+            {isInDeck ? 'Ya está en el mazo' : '+ Añadir al mazo'}
+          </button>
+          {onSelectArt && !isInDeck && (
+            <button
+              onClick={() => onSelectArt(card)}
+              title="Elegir edición / arte"
+              className="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white px-3 py-2 rounded-lg transition-colors text-sm"
+            >
+              🎨
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 export default function CardSearch({ onAddCard, deckCards }) {
+  const { isClient } = useAuth();
   const [query, setQuery]                   = useState('');
   const [selectedColors, setSelectedColors] = useState([]);
   const [cmc, setCmc]                       = useState('');
@@ -92,6 +106,7 @@ export default function CardSearch({ onAddCard, deckCards }) {
   const [hasMore, setHasMore]               = useState(false);
   const [page, setPage]                     = useState(1);
   const [previewCard, setPreviewCard]       = useState(null);
+  const [artCard, setArtCard]               = useState(null); // carta pendiente de selección de arte
 
   const hasActiveFilters = selectedColors.length > 0 || cmc !== '';
   const shouldSearch = query.trim().length >= 2 || hasActiveFilters;
@@ -143,7 +158,8 @@ export default function CardSearch({ onAddCard, deckCards }) {
 
   const clearFilters = () => { setSelectedColors([]); setCmc(''); };
 
-  const getCardCount = (id) => deckCards.filter(c => c.scryfallId === id).length;
+  const isCardInDeck = (name) => deckCards.some(c => c.name === name);
+  const getCardCount = (name) => deckCards.filter(c => c.name === name).length;
 
   return (
     <div className="flex flex-col h-full">
@@ -243,8 +259,9 @@ export default function CardSearch({ onAddCard, deckCards }) {
                 card={card}
                 onAdd={onAddCard}
                 onPreview={setPreviewCard}
-                isInDeck={getCardCount(card.scryfallId) > 0}
-                count={getCardCount(card.scryfallId)}
+                onSelectArt={isClient ? setArtCard : undefined}
+                isInDeck={isCardInDeck(card.name)}
+                count={getCardCount(card.name)}
               />
             ))}
           </div>
@@ -279,7 +296,17 @@ export default function CardSearch({ onAddCard, deckCards }) {
           card={previewCard}
           onClose={() => setPreviewCard(null)}
           onAdd={onAddCard}
-          isInDeck={getCardCount(previewCard.scryfallId) > 0}
+          onSelectArt={isClient ? (card) => { setPreviewCard(null); setArtCard(card); } : undefined}
+          isInDeck={isCardInDeck(previewCard.name)}
+        />
+      )}
+
+      {/* Modal de selección de arte (solo usuarios logueados) */}
+      {artCard && (
+        <ArtSelectorModal
+          card={artCard}
+          onConfirm={onAddCard}
+          onClose={() => setArtCard(null)}
         />
       )}
     </div>

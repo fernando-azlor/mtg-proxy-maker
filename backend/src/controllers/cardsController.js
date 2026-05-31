@@ -1,4 +1,4 @@
-const { searchCards, getCardById } = require('../services/scryfallService');
+const { searchCards, getCardById, getCardPrintings } = require('../services/scryfallService');
 const { validationResult } = require('express-validator');
 const { logger } = require('../config/logger');
 
@@ -37,4 +37,20 @@ const getCard = async (req, res) => {
   }
 };
 
-module.exports = { search, getCard };
+const getCardPrintingsController = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { id } = req.params;
+  try {
+    const result = await getCardPrintings(id);
+    return res.status(200).json(result);
+  } catch (err) {
+    logger.error({ message: 'Error obteniendo ediciones', error: err.message });
+    return res.status(500).json({ error: 'Error al obtener las ediciones' });
+  }
+};
+
+module.exports = { search, getCard, getCardPrintingsController };

@@ -110,4 +110,44 @@ const getCardById = async (scryfallId) => {
   };
 };
 
-module.exports = { searchCards, getCardById, validateScryfallUrl };
+const getCardPrintings = async (scryfallId) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(scryfallId)) {
+    throw new Error('ID de carta inválido');
+  }
+
+  // Primero obtenemos el nombre exacto de la carta
+  const cardResponse = await fetch(`${SCRYFALL_BASE_URL}/cards/${scryfallId}`);
+  if (!cardResponse.ok) throw new Error('Carta no encontrada');
+  const card = await cardResponse.json();
+
+  // Buscamos todas las ediciones por nombre exacto
+  const url = new URL(`${SCRYFALL_BASE_URL}/cards/search`);
+  url.searchParams.set('q', `!"${card.name}"`);
+  url.searchParams.set('unique', 'prints');
+  url.searchParams.set('order', 'released');
+  url.searchParams.set('dir', 'desc');
+
+  const printsResponse = await fetch(url.toString());
+  if (!printsResponse.ok) throw new Error('Error obteniendo ediciones');
+  const data = await printsResponse.json();
+
+  const printings = data.data.map((p) => ({
+    scryfallId: p.id,
+    name: p.name,
+    setCode: p.set.toUpperCase(),
+    setName: p.set_name,
+    collectorNumber: p.collector_number,
+    releasedAt: p.released_at,
+    imageUrl: p.image_uris?.normal || p.card_faces?.[0]?.image_uris?.normal || null,
+    imageUrlSmall: p.image_uris?.small || p.card_faces?.[0]?.image_uris?.small || null,
+    isFullArt: p.full_art || false,
+    isBorderless: p.border_color === 'borderless',
+    isPromo: p.promo || false,
+    frameEffects: p.frame_effects || [],
+  }));
+
+  return { printings };
+};
+
+module.exports = { searchCards, getCardById, getCardPrintings, validateScryfallUrl };

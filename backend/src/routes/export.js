@@ -2,6 +2,7 @@ const express = require('express');
 const { param, body } = require('express-validator');
 const { exportDeckPdf, exportGuestPdf } = require('../controllers/exportController');
 const { requireAuth } = require('../middleware/auth');
+const { guestExportLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.get(
 
 router.post(
   '/guest/export',
+  guestExportLimiter,
   [
     body('cards')
       .isArray({ min: 1, max: 100 })

@@ -14,6 +14,8 @@ export default function DecksPage() {
   const [newDeckName, setNewDeckName] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editingName, setEditingName] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -49,6 +51,24 @@ export default function DecksPage() {
     }
   };
 
+  const startEditing = (deck) => {
+    setEditingId(deck.id);
+    setEditingName(deck.name);
+  };
+
+  const handleRename = async (deckId) => {
+    const trimmed = editingName.trim();
+    if (!trimmed) { setEditingId(null); return; }
+    try {
+      await api.put(`/api/decks/${deckId}`, { name: trimmed });
+      setDecks(prev => prev.map(d => d.id === deckId ? { ...d, name: trimmed } : d));
+    } catch {
+      setError('Error al renombrar el mazo');
+    } finally {
+      setEditingId(null);
+    }
+  };
+
   const handleDelete = async (deckId) => {
     if (!confirm('¿Eliminar este mazo? Esta acción no se puede deshacer.')) return;
     try {
@@ -65,9 +85,28 @@ export default function DecksPage() {
     <div className="min-h-screen bg-gray-950">
       <Navbar />
       <main className="max-w-4xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold text-white">Mis Mazos</h1>
-          <span className="text-gray-400 text-sm">{decks.length}/∞ mazos</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Mis Mazos</h1>
+            <span className="text-gray-400 text-sm">{decks.length} mazo{decks.length !== 1 ? 's' : ''}</span>
+          </div>
+          <form onSubmit={handleCreate} className="flex gap-2">
+            <input
+              type="text"
+              value={newDeckName}
+              onChange={(e) => setNewDeckName(e.target.value)}
+              placeholder="Nombre del nuevo mazo..."
+              maxLength={100}
+              className="w-56 bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={creating || !newDeckName.trim()}
+              className="bg-amber-500 hover:bg-amber-400 disabled:bg-gray-700 disabled:text-gray-500 text-gray-900 font-semibold px-4 py-2.5 rounded-lg transition-colors text-sm whitespace-nowrap"
+            >
+              {creating ? 'Creando...' : '+ Crear mazo'}
+            </button>
+          </form>
         </div>
 
         {error && (
@@ -75,24 +114,6 @@ export default function DecksPage() {
             {error}
           </div>
         )}
-
-        <form onSubmit={handleCreate} className="flex gap-3 mb-8">
-          <input
-            type="text"
-            value={newDeckName}
-            onChange={(e) => setNewDeckName(e.target.value)}
-            placeholder="Nombre del nuevo mazo..."
-            maxLength={100}
-            className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-          />
-          <button
-            type="submit"
-            disabled={creating || !newDeckName.trim()}
-            className="bg-amber-500 hover:bg-amber-400 disabled:bg-gray-700 disabled:text-gray-500 text-gray-900 font-semibold px-6 py-2.5 rounded-lg transition-colors"
-          >
-            {creating ? 'Creando...' : 'Crear mazo'}
-          </button>
-        </form>
 
         {loadingDecks ? (
           <div className="space-y-3">
@@ -112,8 +133,31 @@ export default function DecksPage() {
                 key={deck.id}
                 className="bg-gray-900 border border-gray-700 rounded-xl p-5 flex items-center justify-between hover:border-amber-500 transition-colors"
               >
-                <div>
-                  <h2 className="text-white font-medium">{deck.name}</h2>
+                <div className="flex-1 min-w-0 mr-4">
+                  {editingId === deck.id ? (
+                    <input
+                      type="text"
+                      value={editingName}
+                      autoFocus
+                      maxLength={100}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onBlur={() => handleRename(deck.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRename(deck.id);
+                        if (e.key === 'Escape') setEditingId(null);
+                      }}
+                      className="bg-gray-800 border border-amber-500 rounded-lg px-3 py-1 text-white text-sm font-medium w-full focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    />
+                  ) : (
+                    <h2
+                      className="text-white font-medium cursor-pointer hover:text-amber-400 transition-colors group flex items-center gap-1.5"
+                      onClick={() => startEditing(deck)}
+                      title="Clic para renombrar"
+                    >
+                      {deck.name}
+                      <span className="text-gray-600 group-hover:text-amber-500 text-xs">✎</span>
+                    </h2>
+                  )}
                   <p className="text-gray-400 text-sm mt-0.5">
                     {deck._count.cards} / 100 cartas · Commander
                   </p>

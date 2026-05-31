@@ -40,11 +40,17 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const updateRole = async (role) => {
+    const { data } = await api.put('/api/users/role', { role });
+    setUser(data.user);
+    return data;
+  };
+
   const isClient = user?.role === 'CLIENT' || user?.role === 'PREMIUM';
   const isPremium = user?.role === 'PREMIUM';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, isClient, isPremium }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateRole, isClient, isPremium }}>
       {children}
     </AuthContext.Provider>
   );

@@ -27,6 +27,13 @@ app.use(helmet({
       frameAncestors: ["'none'"],
     },
   },
+  // HSTS: fuerza HTTPS durante 1 año, incluye subdominios
+  // En dev no hay HTTPS pero la cabecera queda lista para producción
+  hsts: {
+    maxAge: 31536000,          // 1 año en segundos
+    includeSubDomains: true,
+    preload: true,
+  },
   crossOriginEmbedderPolicy: false,
 }));
 
@@ -37,7 +44,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
 
 // Rutas

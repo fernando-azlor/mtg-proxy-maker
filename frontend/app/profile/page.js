@@ -7,12 +7,14 @@ import Link from 'next/link';
 import api from '../../lib/api';
 
 export default function ProfilePage() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, updateRole, isPremium } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [updatingRole, setUpdatingRole] = useState(false);
+  const [roleSuccess, setRoleSuccess] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -29,6 +31,22 @@ export default function ProfilePage() {
       setProfile(data.user);
     } catch {
       setError('Error al cargar el perfil');
+    }
+  };
+
+  const handleRoleChange = async (newRole) => {
+    if (newRole === user?.role) return;
+    setUpdatingRole(true);
+    setRoleSuccess('');
+    setError('');
+    try {
+      await updateRole(newRole);
+      setRoleSuccess('Tipo de cuenta actualizado correctamente');
+      setTimeout(() => setRoleSuccess(''), 3000);
+    } catch {
+      setError('Error al actualizar el tipo de cuenta');
+    } finally {
+      setUpdatingRole(false);
     }
   };
 
@@ -76,6 +94,55 @@ export default function ProfilePage() {
                 {profile ? new Date(profile.createdAt).toLocaleDateString('es-ES') : '...'}
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Cambio de tipo de cuenta */}
+        <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 mb-6">
+          <h2 className="text-lg font-semibold text-white mb-1">Tipo de cuenta</h2>
+          <p className="text-gray-400 text-sm mb-4">Cambia entre cuenta gratuita y Premium en cualquier momento.</p>
+
+          {roleSuccess && (
+            <div className="bg-green-900/30 border border-green-700 text-green-300 px-4 py-2 rounded-lg mb-4 text-sm">
+              {roleSuccess}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              disabled={updatingRole || user?.role === 'CLIENT'}
+              onClick={() => handleRoleChange('CLIENT')}
+              className={`p-4 rounded-xl border-2 text-left transition-all ${
+                user?.role === 'CLIENT'
+                  ? 'border-amber-500 bg-amber-500/10 cursor-default'
+                  : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+              }`}
+            >
+              <p className="text-white font-semibold text-sm flex items-center gap-2">
+                Gratuita
+                {user?.role === 'CLIENT' && <span className="text-amber-400 text-xs">✓ Activa</span>}
+              </p>
+              <p className="text-gray-400 text-xs mt-1">Guarda y edita mazos</p>
+            </button>
+
+            <button
+              type="button"
+              disabled={updatingRole || user?.role === 'PREMIUM'}
+              onClick={() => handleRoleChange('PREMIUM')}
+              className={`p-4 rounded-xl border-2 text-left transition-all ${
+                user?.role === 'PREMIUM'
+                  ? 'border-amber-500 bg-amber-500/10 cursor-default'
+                  : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+              }`}
+            >
+              <p className="text-white font-semibold text-sm flex items-center gap-2">
+                Premium
+                <span className="bg-amber-500 text-gray-900 text-xs font-bold px-1.5 py-0.5 rounded">PRO</span>
+                {user?.role === 'PREMIUM' && <span className="text-amber-400 text-xs">✓ Activa</span>}
+              </p>
+              <p className="text-gray-400 text-xs mt-1">Mazos + estadísticas</p>
+            </button>
           </div>
         </div>
 

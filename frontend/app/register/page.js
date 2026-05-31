@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -11,8 +11,18 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, user, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Si ya hay sesión activa, redirigir a mazos
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace('/decks');
+    }
+  }, [user, authLoading, router]);
+
+  // Mientras se comprueba la sesión, no renderizar el formulario
+  if (authLoading || user) return null;
 
   const validate = () => {
     const newErrors = {};
@@ -142,6 +152,14 @@ export default function RegisterPage() {
               Inicia sesión
             </Link>
           </p>
+          <div className="mt-4 pt-4 border-t border-gray-700 flex items-center justify-between">
+            <Link href="/" className="text-gray-500 hover:text-gray-300 text-sm transition-colors">
+              ← Volver al inicio
+            </Link>
+            <Link href="/privacy" className="text-gray-500 hover:text-gray-300 text-sm transition-colors">
+              Política de privacidad
+            </Link>
+          </div>
         </div>
       </div>
     </div>

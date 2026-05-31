@@ -19,7 +19,7 @@ export default function GuestBuilderPage() {
         setError('El mazo ya tiene 100 cartas (límite Commander)');
         return prev;
       }
-      const exists = prev.find(c => c.scryfallId === card.scryfallId);
+      const exists = prev.find(c => c.name === card.name);
       if (exists) {
         setError('Esta carta ya está en el mazo (Commander es singleton)');
         return prev;
@@ -47,9 +47,10 @@ export default function GuestBuilderPage() {
     }
     setExportingPdf(true);
     try {
+      const cardsPayload = deckCards.map(({ scryfallId, name, imageUrl }) => ({ scryfallId, name, imageUrl }));
       const response = await api.post(
         '/api/decks/guest/export',
-        { cards: deckCards },
+        { cards: cardsPayload },
         { responseType: 'blob' }
       );
       const url = window.URL.createObjectURL(new Blob([response.data]));

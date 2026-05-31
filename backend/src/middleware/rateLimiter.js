@@ -29,4 +29,23 @@ const registerLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = { loginLimiter, registerLimiter };
+// Limita exportaciones de visitantes: 10 PDFs por IP cada 15 minutos
+// Evita abuso del endpoint público /api/decks/guest/export
+const guestExportLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: {
+    error: 'Demasiadas exportaciones. Espera 15 minutos o inicia sesión para mayor límite.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn({
+      message: 'Rate limit alcanzado en guest export',
+      ip: req.ip,
+    });
+    res.status(429).json(options.message);
+  },
+});
+
+module.exports = { loginLimiter, registerLimiter, guestExportLimiter };
