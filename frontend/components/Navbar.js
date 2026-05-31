@@ -26,6 +26,9 @@ export default function Navbar() {
               <Link href="/decks" className="text-gray-300 hover:text-white text-sm">
                 Mis Mazos
               </Link>
+              <Link href="/profile" className="text-gray-300 hover:text-white text-sm">
+                Perfil
+	      </Link>
               <span className="text-gray-500 text-sm">{user.email}</span>
               <button
                 onClick={handleLogout}
