@@ -7,6 +7,7 @@ import Link from 'next/link';
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('CLIENT');
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,7 +40,7 @@ export default function RegisterPage() {
     setErrors({});
     setLoading(true);
     try {
-      await register(email, password);
+      await register(email, password, role);
       router.push('/decks');
     } catch (err) {
       setServerError(err.response?.data?.error || 'Error al registrarse');
@@ -92,6 +93,40 @@ export default function RegisterPage() {
                 autoComplete="new-password"
               />
               {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Tipo de cuenta
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole('CLIENT')}
+                  className={`p-3 rounded-lg border text-left transition-colors ${
+                    role === 'CLIENT'
+                      ? 'border-amber-500 bg-amber-500/10'
+                      : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+                  }`}
+                >
+                  <p className="text-white font-medium text-sm">Gratuita</p>
+                  <p className="text-gray-400 text-xs mt-0.5">Guarda y edita mazos</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('PREMIUM')}
+                  className={`p-3 rounded-lg border text-left transition-colors ${
+                    role === 'PREMIUM'
+                      ? 'border-amber-500 bg-amber-500/10'
+                      : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+                  }`}
+                >
+                  <p className="text-white font-medium text-sm flex items-center gap-1.5">
+                    Premium
+                    <span className="bg-amber-500 text-gray-900 text-xs font-bold px-1.5 py-0.5 rounded">PRO</span>
+                  </p>
+                  <p className="text-gray-400 text-xs mt-0.5">Mazos + estadísticas</p>
+                </button>
+              </div>
             </div>
             <button
               type="submit"

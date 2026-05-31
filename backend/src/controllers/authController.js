@@ -11,7 +11,7 @@ const COOKIE_OPTIONS = {
 };
 
 const register = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, role: requestedRole } = req.body;
 
   try {
     const existingUser = await prisma.user.findUnique({
@@ -24,13 +24,26 @@ const register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const user = await prisma.user.create({
-      data: { email, password: hashedPassword },
-      select: { id: true, email: true, createdAt: true }
-    });
+    const desiredRole = requestedRole || 'CLIENT';
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: { email, password: hashedPassword, role: desiredRole },
+      });
+    } catch (err) {
+      if (err.message?.includes('role')) {
+        // Migración pendiente: crear sin role, el campo aún no existe en la BD
+        user = await prisma.user.create({
+          data: { email, password: hashedPassword },
+        });
+      } else {
+        throw err;
+      }
+    }
 
+    const role = user.role || desiredRole;
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id, email: user.email, role },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
@@ -42,7 +55,7 @@ const register = async (req, res) => {
       userId: user.id,
     });
 
-    return res.status(201).json({ user });
+    return res.status(201).json({ user: { id: user.id, email: user.email, role } });
 
   } catch (error) {
     logger.error({ message: 'Error en registro', error: error.message });
@@ -55,7 +68,7 @@ const login = async (req, res) => {
 
   try {
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
     });
 
     if (!user) {
@@ -74,8 +87,9 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
 
+    const role = user.role || 'CLIENT';
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id, email: user.email, role },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
@@ -85,7 +99,7 @@ const login = async (req, res) => {
     logger.info({ message: 'Login exitoso', userId: user.id });
 
     return res.status(200).json({
-      user: { id: user.id, email: user.email }
+      user: { id: user.id, email: user.email, role }
     });
 
   } catch (error) {
@@ -104,14 +118,14 @@ const me = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.userId },
-      select: { id: true, email: true, createdAt: true }
+      select: { id: true, email: true, createdAt: true },
     });
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    return res.status(200).json({ user });
+    return res.status(200).json({ user: { ...user, role: req.user.role || 'CLIENT' } });
   } catch (error) {
     logger.error({ message: 'Error en /me', error: error.message });
     return res.status(500).json({ error: 'Error interno del servidor' });

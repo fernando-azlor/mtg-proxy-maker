@@ -17,7 +17,7 @@ export default function DecksPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+      router.push('/builder');
     }
   }, [user, loading, router]);
 

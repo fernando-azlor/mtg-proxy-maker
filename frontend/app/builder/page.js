@@ -1,46 +1,17 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../../../context/AuthContext';
-import { useRouter, useParams } from 'next/navigation';
-import Navbar from '../../../components/Navbar';
-import CardSearch from '../../../components/CardSearch';
-import api from '../../../lib/api';
+import { useState, useCallback } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useRouter } from 'next/navigation';
+import Navbar from '../../components/Navbar';
+import CardSearch from '../../components/CardSearch';
+import api from '../../lib/api';
 
-export default function DeckBuilderPage() {
-  const { user, loading } = useAuth();
+export default function GuestBuilderPage() {
+  const { user, isClient } = useAuth();
   const router = useRouter();
-  const { id } = useParams();
-  const [deck, setDeck] = useState(null);
   const [deckCards, setDeckCards] = useState([]);
-  const [loadingDeck, setLoadingDeck] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [exportingPdf, setExportingPdf] = useState(false);
-
-  useEffect(() => {
-    if (!loading && !user) router.push('/builder');
-  }, [user, loading, router]);
-
-  useEffect(() => {
-    if (user && id) fetchDeck();
-  }, [user, id]);
-
-  const fetchDeck = async () => {
-    try {
-      const { data } = await api.get(`/api/decks/${id}`);
-      setDeck(data.deck);
-      setDeckCards(data.deck.cards);
-    } catch (err) {
-      if (err.response?.status === 403) {
-        router.push('/decks');
-      } else {
-        setError('Error al cargar el mazo');
-      }
-    } finally {
-      setLoadingDeck(false);
-    }
-  };
 
   const handleAddCard = useCallback((card) => {
     setDeckCards(prev => {
@@ -69,23 +40,6 @@ export default function DeckBuilderPage() {
     })));
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    setError('');
-    try {
-      await api.put(`/api/decks/${id}`, {
-        name: deck.name,
-        cards: deckCards,
-      });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Error al guardar');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleExportPdf = async () => {
     if (deckCards.length === 0) {
       setError('Añade cartas al mazo antes de exportar');
@@ -93,13 +47,15 @@ export default function DeckBuilderPage() {
     }
     setExportingPdf(true);
     try {
-      const response = await api.get(`/api/decks/${id}/export`, {
-        responseType: 'blob',
-      });
+      const response = await api.post(
+        '/api/decks/guest/export',
+        { cards: deckCards },
+        { responseType: 'blob' }
+      );
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${deck.name}.pdf`);
+      link.setAttribute('download', 'proxy.pdf');
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -113,28 +69,52 @@ export default function DeckBuilderPage() {
 
   const commander = deckCards.find(c => c.isCommander);
 
-  if (loading || loadingDeck) return null;
-
   return (
     <div className="min-h-screen bg-gray-950">
       <Navbar />
+
+      {!user && (
+        <div className="bg-amber-500/10 border-b border-amber-500/30 px-6 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <p className="text-amber-300 text-sm">
+              Estás usando el modo visitante. Tu mazo no se guardará al cerrar la página.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => router.push('/login')}
+                className="text-amber-400 hover:text-amber-300 text-sm font-semibold underline"
+              >
+                Iniciar sesión
+              </button>
+              <button
+                onClick={() => router.push('/register')}
+                className="bg-amber-500 hover:bg-amber-400 text-gray-900 text-sm font-semibold px-3 py-1 rounded-lg transition-colors"
+              >
+                Registrarse para guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-7xl mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">{deck?.name}</h1>
+            <h1 className="text-2xl font-bold text-white">Constructor de mazo</h1>
             <p className="text-gray-400 text-sm mt-0.5">
               {deckCards.length}/100 cartas
               {commander && <span className="text-amber-400 ml-2">· Comandante: {commander.name}</span>}
             </p>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
-            >
-              {saving ? 'Guardando...' : saved ? 'Guardado' : 'Guardar'}
-            </button>
+            {isClient && (
+              <button
+                onClick={() => router.push('/decks')}
+                className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
+              >
+                Mis mazos guardados
+              </button>
+            )}
             <button
               onClick={handleExportPdf}
               disabled={exportingPdf || deckCards.length === 0}

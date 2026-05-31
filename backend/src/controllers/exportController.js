@@ -1,6 +1,7 @@
 const prisma = require('../config/prisma');
 const { generateProxyPdf } = require('../services/pdfService');
 const { logger } = require('../config/logger');
+const { validationResult } = require('express-validator');
 
 const exportDeckPdf = async (req, res) => {
   const { id } = req.params;
@@ -50,4 +51,32 @@ const exportDeckPdf = async (req, res) => {
   }
 };
 
-module.exports = { exportDeckPdf };
+const exportGuestPdf = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { cards } = req.body;
+
+  try {
+    logger.info({
+      message: 'Generando PDF de visitante',
+      ip: req.ip,
+      cardCount: cards.length,
+    });
+
+    const pdfBytes = await generateProxyPdf(cards);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="proxy.pdf"');
+    res.setHeader('Content-Length', pdfBytes.length);
+
+    return res.send(Buffer.from(pdfBytes));
+  } catch (err) {
+    logger.error({ message: 'Error generando PDF de visitante', error: err.message });
+    return res.status(500).json({ error: 'Error al generar el PDF' });
+  }
+};
+
+module.exports = { exportDeckPdf, exportGuestPdf };

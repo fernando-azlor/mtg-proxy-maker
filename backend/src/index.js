@@ -47,8 +47,8 @@ app.get('/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/cards', cardsRoutes);
-app.use('/api/decks', decksRoutes);
 app.use('/api/decks', exportRoutes);
+app.use('/api/decks', decksRoutes);
 app.use('/api/users', usersRoutes);
 
 // Manejador de rutas no encontradas

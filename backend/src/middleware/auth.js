@@ -29,4 +29,17 @@ const requireAuth = (req, res, next) => {
   }
 };
 
-module.exports = { requireAuth };
+const requirePremium = (req, res, next) => {
+  if (req.user?.role !== 'PREMIUM') {
+    logger.warn({
+      message: 'Acceso a recurso Premium denegado',
+      ip: req.ip,
+      userId: req.user?.userId,
+      path: req.path,
+    });
+    return res.status(403).json({ error: 'Se requiere cuenta Premium' });
+  }
+  next();
+};
+
+module.exports = { requireAuth, requirePremium };

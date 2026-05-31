@@ -29,8 +29,8 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const register = async (email, password) => {
-    const { data } = await api.post('/api/auth/register', { email, password });
+  const register = async (email, password, role = 'CLIENT') => {
+    const { data } = await api.post('/api/auth/register', { email, password, role });
     setUser(data.user);
     return data;
   };
@@ -40,8 +40,11 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const isClient = user?.role === 'CLIENT' || user?.role === 'PREMIUM';
+  const isPremium = user?.role === 'PREMIUM';
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, isClient, isPremium }}>
       {children}
     </AuthContext.Provider>
   );

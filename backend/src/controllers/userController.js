@@ -34,6 +34,7 @@ const getProfile = async (req, res) => {
       select: {
         id: true,
         email: true,
+        role: true,
         createdAt: true,
         _count: { select: { decks: true } },
       },

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, isPremium } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -21,14 +21,22 @@ export default function Navbar() {
           MTG Proxy Maker
         </Link>
         <div className="flex items-center gap-4">
+          <Link href="/builder" className="text-gray-300 hover:text-white text-sm">
+            Crear mazo
+          </Link>
           {user ? (
             <>
               <Link href="/decks" className="text-gray-300 hover:text-white text-sm">
                 Mis Mazos
               </Link>
-              <Link href="/profile" className="text-gray-300 hover:text-white text-sm">
+              <Link href="/profile" className="text-gray-300 hover:text-white text-sm flex items-center gap-1.5">
                 Perfil
-	      </Link>
+                {isPremium && (
+                  <span className="bg-amber-500 text-gray-900 text-xs font-bold px-1.5 py-0.5 rounded">
+                    PREMIUM
+                  </span>
+                )}
+              </Link>
               <span className="text-gray-500 text-sm">{user.email}</span>
               <button
                 onClick={handleLogout}

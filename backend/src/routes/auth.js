@@ -18,6 +18,10 @@ const registerValidation = [
     .withMessage('La contraseña debe contener al menos una mayúscula')
     .matches(/[0-9]/)
     .withMessage('La contraseña debe contener al menos un número'),
+  body('role')
+    .optional()
+    .isIn(['CLIENT', 'PREMIUM'])
+    .withMessage('Rol inválido'),
 ];
 
 const loginValidation = [
