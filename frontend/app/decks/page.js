@@ -23,10 +23,6 @@ export default function DecksPage() {
     }
   }, [user, loading, router]);
 
-  useEffect(() => {
-    if (user) fetchDecks();
-  }, [user]);
-
   const fetchDecks = async () => {
     try {
       const { data } = await api.get('/api/decks');
@@ -37,6 +33,10 @@ export default function DecksPage() {
       setLoadingDecks(false);
     }
   };
+
+  useEffect(() => {
+    if (user) fetchDecks();
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreate = async (e) => {
     e.preventDefault();

@@ -136,7 +136,7 @@ export default function CardSearch({ onAddCard, deckCards }) {
   }, []);
 
   useEffect(() => {
-    if (!shouldSearch) { setCards([]); return; }
+    if (!shouldSearch) { setPage(1); return; }
     setPage(1);
     const delay = query.trim().length >= 2 ? 400 : 0;
     const timer = setTimeout(() => {
@@ -144,6 +144,8 @@ export default function CardSearch({ onAddCard, deckCards }) {
     }, delay);
     return () => clearTimeout(timer);
   }, [query, selectedColors, cmc]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const visibleCards = shouldSearch ? cards : [];
 
   const toggleColor = (code) =>
     setSelectedColors(prev =>
@@ -242,7 +244,7 @@ export default function CardSearch({ onAddCard, deckCards }) {
         </div>
       )}
 
-      {loading && cards.length === 0 && (
+      {loading && visibleCards.length === 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="bg-gray-800 rounded-xl aspect-[63/88] animate-pulse" />
@@ -250,10 +252,10 @@ export default function CardSearch({ onAddCard, deckCards }) {
         </div>
       )}
 
-      {cards.length > 0 && (
+      {visibleCards.length > 0 && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto flex-1">
-            {cards.map(card => (
+            {visibleCards.map(card => (
               <CardItem
                 key={card.scryfallId}
                 card={card}
@@ -277,7 +279,7 @@ export default function CardSearch({ onAddCard, deckCards }) {
         </>
       )}
 
-      {!loading && shouldSearch && cards.length === 0 && (
+      {!loading && shouldSearch && visibleCards.length === 0 && (
         <div className="text-center text-gray-500 py-12">
           No se encontraron cartas con esos criterios
         </div>

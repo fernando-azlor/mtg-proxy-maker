@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 
 /**
@@ -11,14 +11,9 @@ import Link from 'next/link';
  * para informar al usuario de su existencia y finalidad.
  */
 export default function CookieBanner() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    // Mostrar solo si el usuario aún no ha visto el aviso
-    if (!localStorage.getItem('cookie_consent')) {
-      setVisible(true);
-    }
-  }, []);
+  const [visible, setVisible] = useState(
+    () => typeof window !== 'undefined' && !localStorage.getItem('cookie_consent')
+  );
 
   const accept = () => {
     localStorage.setItem('cookie_consent', 'accepted');

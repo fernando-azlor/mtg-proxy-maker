@@ -8,10 +8,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
   const checkAuth = async () => {
     try {
       const { data } = await api.get('/api/auth/me');
@@ -22,6 +18,10 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    checkAuth();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = async (email, password) => {
     const { data } = await api.post('/api/auth/login', { email, password });

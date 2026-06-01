@@ -28,6 +28,7 @@ jest.mock('../src/config/prisma', () => ({
 }));
 
 const prisma = require('../src/config/prisma');
+const { clearBlocklist } = require('../src/config/tokenBlocklist');
 const app    = require('../src/index');
 
 // ─── Utilidades ─────────────────────────────────────────────────────────────
@@ -185,7 +186,7 @@ describe('POST /api/auth/logout', () => {
 
 // ─── CONTROL DE ACCESO POR ROL ───────────────────────────────────────────────
 describe('Control de acceso — rutas protegidas', () => {
-  beforeEach(() => jest.resetAllMocks());
+  beforeEach(() => { jest.resetAllMocks(); clearBlocklist(); });
 
   test('401 — GET /api/decks sin token', async () => {
     const res = await request(app).get('/api/decks');

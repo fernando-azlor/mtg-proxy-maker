@@ -27,4 +27,6 @@ const _cleanup = () => {
   }
 };
 
-module.exports = { addToken, isBlocked };
+const clearBlocklist = () => blocklist.clear();
+
+module.exports = { addToken, isBlocked, clearBlocklist };

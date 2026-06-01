@@ -19,10 +19,6 @@ export default function ProfilePage() {
     if (!loading && !user) router.push('/login');
   }, [user, loading, router]);
 
-  useEffect(() => {
-    if (user) fetchProfile();
-  }, [user]);
-
   const fetchProfile = async () => {
     try {
       const { data } = await api.get('/api/users/profile');
@@ -31,6 +27,10 @@ export default function ProfilePage() {
       setError('Error al cargar el perfil');
     }
   };
+
+  useEffect(() => {
+    if (user) fetchProfile();
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== 'ELIMINAR') return;

@@ -24,10 +24,6 @@ export default function AdminPage() {
     if (!loading && user && !isAdmin) router.push('/');
   }, [user, loading, isAdmin, router]);
 
-  useEffect(() => {
-    if (isAdmin) fetchUsers();
-  }, [isAdmin]);
-
   const fetchUsers = async () => {
     try {
       const { data } = await api.get('/api/users');
@@ -38,6 +34,10 @@ export default function AdminPage() {
       setLoadingUsers(false);
     }
   };
+
+  useEffect(() => {
+    if (isAdmin) fetchUsers();
+  }, [isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRoleChange = async (targetUserId, newRole) => {
     setUpdatingId(targetUserId);

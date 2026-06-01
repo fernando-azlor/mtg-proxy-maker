@@ -275,10 +275,6 @@ export default function DeckBuilderPage() {
     if (!loading && !user) router.push('/builder');
   }, [user, loading, router]);
 
-  useEffect(() => {
-    if (user && id) fetchDeck();
-  }, [user, id]);
-
   const fetchDeck = async () => {
     try {
       const { data } = await api.get(`/api/decks/${id}`);
@@ -291,6 +287,10 @@ export default function DeckBuilderPage() {
       setLoadingDeck(false);
     }
   };
+
+  useEffect(() => {
+    if (user && id) fetchDeck();
+  }, [user, id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddCard = useCallback((card) => {
     setDeckCards(prev => {
