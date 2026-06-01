@@ -21,6 +21,14 @@ logs/
 .DS_Store
 Thumbs.db
 
+# Archivos de pruebas manuales con tokens
+cookies.txt
+cookies_atacante.txt
+
+# Archivos de configuración de agentes IA
+AGENTS.md
+CLAUDE.md
+
 # IDE
 .vscode/
 .idea/
