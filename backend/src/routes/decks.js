@@ -44,11 +44,30 @@ router.put(
       .optional()
       .isUUID()
       .withMessage('ID de carta inválido'),
+    // Nombre de carta: trim + longitud, sin .escape() porque React
+    // renderiza como texto (no innerHTML) y .escape() causa doble codificación
+    // al recargar cartas que ya tenían entidades HTML de Scryfall.
     body('cards.*.name')
       .optional()
       .trim()
-      .isLength({ min: 1, max: 200 })
-      .escape(),
+      .isLength({ min: 1, max: 200 }),
+    // Metadatos de Scryfall — solo longitud, sin escapado
+    body('cards.*.manaCost')
+      .optional({ nullable: true })
+      .isLength({ max: 200 })
+      .withMessage('manaCost demasiado largo'),
+    body('cards.*.typeLine')
+      .optional({ nullable: true })
+      .isLength({ max: 500 })
+      .withMessage('typeLine demasiado largo'),
+    body('cards.*.oracleText')
+      .optional({ nullable: true })
+      .isLength({ max: 8000 })
+      .withMessage('oracleText demasiado largo'),
+    body('cards.*.imageUrlSmall')
+      .optional({ nullable: true })
+      .isURL({ protocols: ['https'], require_protocol: true })
+      .withMessage('imageUrlSmall inválida'),
   ],
   updateDeck
 );

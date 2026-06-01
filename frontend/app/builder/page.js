@@ -77,7 +77,7 @@ export default function GuestBuilderPage() {
       {!user && (
         <div className="bg-amber-500/10 border-b border-amber-500/30 px-6 py-3">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <p className="text-amber-300 text-sm">
+            <p className="text-amber-300 text-base">
               Estás usando el modo visitante. Tu mazo no se guardará al cerrar la página.
             </p>
             <div className="flex gap-3">
@@ -127,7 +127,7 @@ export default function GuestBuilderPage() {
         </div>
 
         {error && (
-          <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+          <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-base">
             {error}
           </div>
         )}

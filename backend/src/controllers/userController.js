@@ -59,28 +59,54 @@ const getProfile = async (req, res) => {
   }
 };
 
+// Solo accesible por administradores (middleware requireAdmin en la ruta)
 const updateRole = async (req, res) => {
-  const { role } = req.body;
-  const userId = req.user.userId;
+  const { userId, role } = req.body;
 
   try {
-    await prisma.user.update({ where: { id: userId }, data: { role } });
+    const target = await prisma.user.findUnique({ where: { id: userId } });
+    if (!target) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
 
-    const token = jwt.sign(
-      { userId, email: req.user.email, role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
-    );
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { role },
+    });
 
-    res.cookie('token', token, COOKIE_OPTIONS);
+    logger.info({
+      message: 'Rol actualizado por admin',
+      adminId: req.user.userId,
+      targetUserId: userId,
+      oldRole: target.role,
+      newRole: role,
+    });
 
-    logger.info({ message: 'Rol actualizado', userId, role });
-
-    return res.status(200).json({ user: { id: userId, email: req.user.email, role } });
+    return res.status(200).json({ user: { id: updated.id, email: updated.email, role: updated.role } });
   } catch (err) {
     logger.error({ message: 'Error actualizando rol', error: err.message });
     return res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
 
-module.exports = { deleteAccount, getProfile, updateRole };
+// Solo accesible por administradores
+const getUsers = async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        _count: { select: { decks: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return res.status(200).json({ users });
+  } catch (err) {
+    logger.error({ message: 'Error listando usuarios', error: err.message });
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+module.exports = { deleteAccount, getProfile, updateRole, getUsers };

@@ -1,8 +1,11 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator');
 const prisma = require('../config/prisma');
 const { logger } = require('../config/logger');
+const { addToken } = require('../config/tokenBlocklist');
 
+// Opciones para establecer la cookie de sesión
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
@@ -10,7 +13,20 @@ const COOKIE_OPTIONS = {
   maxAge: 24 * 60 * 60 * 1000,
 };
 
+// Opciones para borrar la cookie — sin maxAge para evitar el bug de Express 4
+// donde clearCookie con maxAge positivo establece esa duración en vez de expirar
+const CLEAR_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+};
+
 const register = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { email, password, role: requestedRole } = req.body;
 
   try {
@@ -64,6 +80,11 @@ const register = async (req, res) => {
 };
 
 const login = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { email, password } = req.body;
 
   try {
@@ -109,7 +130,19 @@ const login = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-  res.clearCookie('token', COOKIE_OPTIONS);
+  const token = req.token; // inyectado por requireAuth
+  if (token) {
+    try {
+      const decoded = jwt.decode(token);
+      const expiresAtMs = decoded?.exp
+        ? decoded.exp * 1000
+        : Date.now() + 24 * 60 * 60 * 1000;
+      addToken(token, expiresAtMs);
+    } catch {
+      // token ya malformado, no hay que bloquearlo
+    }
+  }
+  res.clearCookie('token', CLEAR_COOKIE_OPTIONS);
   logger.info({ message: 'Logout', userId: req.user?.userId });
   return res.status(200).json({ message: 'Sesión cerrada correctamente' });
 };

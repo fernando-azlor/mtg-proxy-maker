@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
-  const { user, logout, loading, isPremium } = useAuth();
+  const { user, logout, loading, isPremium, isAdmin } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -21,23 +21,29 @@ export default function Navbar() {
           MTG Proxy Maker
         </Link>
         <div className="flex items-center gap-4">
-          <Link href="/builder" className="text-gray-300 hover:text-white text-sm">
+          <Link href="/builder" className="text-gray-300 hover:text-white text-base">
             Crear mazo
           </Link>
           {user ? (
             <>
-              <Link href="/decks" className="text-gray-300 hover:text-white text-sm">
+              <Link href="/decks" className="text-gray-300 hover:text-white text-base">
                 Mis Mazos
               </Link>
+                  {isAdmin && (
+                <Link href="/admin" className="text-red-400 hover:text-red-300 text-sm flex items-center gap-1">
+                  Admin
+                  <span className="bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded">ADM</span>
+                </Link>
+              )}
               <Link href="/profile" className="text-gray-300 hover:text-white text-sm flex items-center gap-1.5">
                 Perfil
-                {isPremium && (
+                {isPremium && !isAdmin && (
                   <span className="bg-amber-500 text-gray-900 text-xs font-bold px-1.5 py-0.5 rounded">
                     PREMIUM
                   </span>
                 )}
               </Link>
-              <span className="text-gray-500 text-sm">{user.email}</span>
+              <span className="text-gray-500 text-base">{user.email}</span>
               <button
                 onClick={handleLogout}
                 className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-4 py-2 rounded-lg transition-colors"
@@ -47,12 +53,12 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link href="/login" className="text-gray-300 hover:text-white text-sm">
+              <Link href="/login" className="text-gray-300 hover:text-white text-base">
                 Iniciar sesión
               </Link>
               <Link
                 href="/register"
-                className="bg-amber-500 hover:bg-amber-400 text-gray-900 text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                className="bg-amber-500 hover:bg-amber-400 text-gray-900 text-base font-semibold px-4 py-2 rounded-lg transition-colors"
               >
                 Registrarse
               </Link>

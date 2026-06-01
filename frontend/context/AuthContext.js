@@ -36,21 +36,29 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    await api.post('/api/auth/logout');
-    setUser(null);
+    try {
+      await api.post('/api/auth/logout');
+    } catch {
+      // El servidor puede devolver 401 si la cookie ya fue borrada antes
+      // (ej: justo después de eliminar la cuenta). Lo ignoramos —
+      // lo importante es limpiar el estado local.
+    } finally {
+      setUser(null);
+    }
   };
 
-  const updateRole = async (role) => {
-    const { data } = await api.put('/api/users/role', { role });
-    setUser(data.user);
+  // Solo usable por admins: cambia el rol de cualquier usuario
+  const updateRole = async (userId, role) => {
+    const { data } = await api.put('/api/users/role', { userId, role });
     return data;
   };
 
-  const isClient = user?.role === 'CLIENT' || user?.role === 'PREMIUM';
-  const isPremium = user?.role === 'PREMIUM';
+  const isClient  = user?.role === 'CLIENT' || user?.role === 'PREMIUM' || user?.role === 'ADMIN';
+  const isPremium = user?.role === 'PREMIUM' || user?.role === 'ADMIN';
+  const isAdmin   = user?.role === 'ADMIN';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateRole, isClient, isPremium }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateRole, isClient, isPremium, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

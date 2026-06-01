@@ -1,5 +1,6 @@
 const { PDFDocument, rgb } = require('pdf-lib');
 const { validateScryfallUrl } = require('./scryfallService');
+const { logger } = require('../config/logger');
 
 const MM = 2.8346;
 const A4_WIDTH = 210 * MM;
@@ -39,7 +40,7 @@ const drawCard = async (page, pdfDoc, card, x, y) => {
       });
     }
   } catch (err) {
-    console.error('Error dibujando carta:', err.message);
+    logger.warn({ message: 'Error dibujando carta en PDF', error: err.message });
     page.drawRectangle({
       x, y, width: CARD_WIDTH, height: CARD_HEIGHT,
       borderColor: rgb(0.8, 0.2, 0.2), borderWidth: 1,

@@ -324,12 +324,15 @@ export default function DeckBuilderPage() {
     try {
       await api.put(`/api/decks/${id}`, {
         name: deck.name,
-        cards: deckCards.map(({ scryfallId, name, imageUrl, isCommander }) => ({ scryfallId, name, imageUrl, isCommander })),
+        cards: deckCards.map(({ scryfallId, name, imageUrl, imageUrlSmall, manaCost, typeLine, oracleText, isCommander }) => ({
+          scryfallId, name, imageUrl, imageUrlSmall, manaCost, typeLine, oracleText, isCommander,
+        })),
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al guardar');
+      const data = err.response?.data;
+      setError(data?.error || data?.errors?.[0]?.msg || 'Error al guardar');
     } finally {
       setSaving(false);
     }
@@ -339,11 +342,21 @@ export default function DeckBuilderPage() {
     if (deckCards.length === 0) { setError('Añade cartas al mazo antes de exportar'); return; }
     setExportingPdf(true);
     try {
-      const response = await api.get(`/api/decks/${id}/export`, { responseType: 'blob' });
+      // Exportamos el estado actual en memoria (no el guardado en BD)
+      // para que el PDF refleje siempre las cartas que el usuario ve en pantalla
+      const response = await api.post(
+        '/api/decks/guest/export',
+        {
+          cards: deckCards.map(({ scryfallId, name, imageUrl }) => ({
+            scryfallId, name, imageUrl,
+          })),
+        },
+        { responseType: 'blob' }
+      );
       const url  = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${deck.name}.pdf`);
+      link.setAttribute('download', `${deck?.name ?? 'mazo'}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -386,7 +399,7 @@ export default function DeckBuilderPage() {
         </div>
 
         {error && (
-          <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+          <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-base">
             {error}
           </div>
         )}

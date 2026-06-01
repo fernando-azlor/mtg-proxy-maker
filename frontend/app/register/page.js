@@ -69,13 +69,13 @@ export default function RegisterPage() {
         <div className="bg-gray-900 rounded-xl border border-gray-700 p-8">
           <h2 className="text-xl font-semibold text-white mb-6">Crear cuenta</h2>
           {serverError && (
-            <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+            <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-base">
               {serverError}
             </div>
           )}
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+              <label htmlFor="email" className="block text-base font-medium text-gray-300 mb-1">
                 Email
               </label>
               <input
@@ -90,7 +90,7 @@ export default function RegisterPage() {
               {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
+              <label htmlFor="password" className="block text-base font-medium text-gray-300 mb-1">
                 Contraseña
               </label>
               <input
@@ -105,7 +105,7 @@ export default function RegisterPage() {
               {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-base font-medium text-gray-300 mb-2">
                 Tipo de cuenta
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -146,7 +146,7 @@ export default function RegisterPage() {
               {loading ? 'Creando cuenta...' : 'Crear cuenta'}
             </button>
           </form>
-          <p className="text-center text-gray-400 text-sm mt-6">
+          <p className="text-center text-gray-400 text-base mt-6">
             ¿Ya tienes cuenta?{' '}
             <Link href="/login" className="text-amber-400 hover:text-amber-300">
               Inicia sesión

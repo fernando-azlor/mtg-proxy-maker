@@ -46,13 +46,13 @@ export default function LoginPage() {
         <div className="bg-gray-900 rounded-xl border border-gray-700 p-8">
           <h2 className="text-xl font-semibold text-white mb-6">Iniciar sesión</h2>
           {serverError && (
-            <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">
+            <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-base">
               {serverError}
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+              <label htmlFor="email" className="block text-base font-medium text-gray-300 mb-1">
                 Email
               </label>
               <input
@@ -66,7 +66,7 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
+              <label htmlFor="password" className="block text-base font-medium text-gray-300 mb-1">
                 Contraseña
               </label>
               <input
@@ -87,7 +87,7 @@ export default function LoginPage() {
               {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </button>
           </form>
-          <p className="text-center text-gray-400 text-sm mt-6">
+          <p className="text-center text-gray-400 text-base mt-6">
             ¿No tienes cuenta?{' '}
             <Link href="/register" className="text-amber-400 hover:text-amber-300">
               Regístrate

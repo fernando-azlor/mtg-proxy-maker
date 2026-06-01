@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   CLIENT
   PREMIUM
+  ADMIN
 }
 
 model User {
@@ -41,10 +42,14 @@ model DeckCard {
   id          String   @id @default(uuid())
   deckId      String
   deck        Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
-  scryfallId  String
-  name        String
-  imageUrl    String
-  isCommander Boolean  @default(false)
+  scryfallId    String
+  name          String
+  imageUrl      String
+  imageUrlSmall String?
+  manaCost      String?
+  typeLine      String?
+  oracleText    String?
+  isCommander   Boolean  @default(false)
   quantity    Int      @default(1)
   createdAt   DateTime @default(now())
 

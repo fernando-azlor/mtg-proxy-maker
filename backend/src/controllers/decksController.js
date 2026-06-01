@@ -109,7 +109,7 @@ const updateDeck = async (req, res) => {
 
     // Transaccion atomica: actualizar nombre y cartas juntos
     const updatedDeck = await prisma.$transaction(async (tx) => {
-      const updated = await tx.deck.update({
+      await tx.deck.update({
         where: { id },
         data: { name: name || deck.name },
       });
@@ -119,11 +119,15 @@ const updateDeck = async (req, res) => {
         if (cards.length > 0) {
           await tx.deckCard.createMany({
             data: cards.map(card => ({
-              deckId: id,
-              scryfallId: card.scryfallId,
-              name: card.name,
-              imageUrl: card.imageUrl || '',
-              isCommander: card.isCommander || false,
+              deckId:       id,
+              scryfallId:   card.scryfallId,
+              name:         card.name,
+              imageUrl:     card.imageUrl      || '',
+              imageUrlSmall: card.imageUrlSmall || null,
+              manaCost:     card.manaCost      || null,
+              typeLine:     card.typeLine      || null,
+              oracleText:   card.oracleText    || null,
+              isCommander:  card.isCommander   || false,
               quantity: 1,
             })),
           });
