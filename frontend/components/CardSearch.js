@@ -136,12 +136,14 @@ export default function CardSearch({ onAddCard, deckCards }) {
   }, []);
 
   useEffect(() => {
-    if (!shouldSearch) { setPage(1); return; }
+    if (!shouldSearch) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
     setPage(1);
     const delay = query.trim().length >= 2 ? 400 : 0;
     const timer = setTimeout(() => {
       searchCards(query, 1, selectedColors, cmc);
     }, delay);
+    /* eslint-enable react-hooks/set-state-in-effect */
     return () => clearTimeout(timer);
   }, [query, selectedColors, cmc]); // eslint-disable-line react-hooks/exhaustive-deps
 

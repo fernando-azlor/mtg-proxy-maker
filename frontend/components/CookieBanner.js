@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 /**
@@ -11,9 +11,14 @@ import Link from 'next/link';
  * para informar al usuario de su existencia y finalidad.
  */
 export default function CookieBanner() {
-  const [visible, setVisible] = useState(
-    () => typeof window !== 'undefined' && !localStorage.getItem('cookie_consent')
-  );
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem('cookie_consent')) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVisible(true);
+    }
+  }, []);
 
   const accept = () => {
     localStorage.setItem('cookie_consent', 'accepted');

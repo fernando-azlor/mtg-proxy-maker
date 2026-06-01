@@ -65,6 +65,10 @@ app.use((req, res) => {
 
 // Manejador global de errores
 app.use((err, req, res, next) => {
+  // Body demasiado grande (express.json limit superado)
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'El cuerpo de la petición es demasiado grande' });
+  }
   logger.error({ message: 'Error no controlado', error: err.message, stack: err.stack });
   res.status(500).json({ error: 'Error interno del servidor' });
 });
