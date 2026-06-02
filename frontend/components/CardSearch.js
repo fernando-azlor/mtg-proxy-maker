@@ -95,7 +95,7 @@ function CardPreviewModal({ card, onClose, onAdd, onSelectArt, isInDeck }) {
   );
 }
 
-export default function CardSearch({ onAddCard, deckCards }) {
+export default function CardSearch({ onAddCard, onRemoveCard, deckCards }) {
   const { isClient } = useAuth();
   const [query, setQuery]                   = useState('');
   const [selectedColors, setSelectedColors] = useState([]);
@@ -163,10 +163,11 @@ export default function CardSearch({ onAddCard, deckCards }) {
   const clearFilters = () => { setSelectedColors([]); setCmc(''); };
 
   const isCardInDeck = (name) => deckCards.some(c => c.name === name);
-  const getCardCount = (name) => deckCards.filter(c => c.name === name).length;
+  // Devuelve la cantidad total de copias de esa carta en el mazo
+  const getCardCount = (name) => deckCards.find(c => c.name === name)?.quantity || 0;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
 
       {/* Texto */}
       <div className="mb-3">
@@ -256,18 +257,22 @@ export default function CardSearch({ onAddCard, deckCards }) {
 
       {visibleCards.length > 0 && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto flex-1">
-            {visibleCards.map(card => (
-              <CardItem
-                key={card.scryfallId}
-                card={card}
-                onAdd={onAddCard}
-                onPreview={setPreviewCard}
-                onSelectArt={isClient ? setArtCard : undefined}
-                isInDeck={isCardInDeck(card.name)}
-                count={getCardCount(card.name)}
-              />
-            ))}
+          {/* Scroll en un div separado del grid para que aspect-ratio funcione correctamente */}
+          <div className="overflow-y-auto max-h-[520px] mt-1">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {visibleCards.map(card => (
+                <CardItem
+                  key={card.scryfallId}
+                  card={card}
+                  onAdd={onAddCard}
+                  onRemove={onRemoveCard}
+                  onPreview={setPreviewCard}
+                  onSelectArt={isClient ? setArtCard : undefined}
+                  isInDeck={isCardInDeck(card.name)}
+                  count={getCardCount(card.name)}
+                />
+              ))}
+            </div>
           </div>
           {hasMore && (
             <button

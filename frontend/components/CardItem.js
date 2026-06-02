@@ -1,6 +1,9 @@
 'use client';
 
-export default function CardItem({ card, onAdd, onPreview, onSelectArt, isInDeck, count }) {
+// onAdd: añade 1 unidad de la carta al mazo
+// onRemove: quita 1 unidad (elimina si llega a 0)
+// count: cuántas hay ya en el mazo (undefined si no está)
+export default function CardItem({ card, onAdd, onRemove, onPreview, onSelectArt, isInDeck, count }) {
   return (
     <div className="bg-gray-900 border border-gray-700 rounded-xl overflow-hidden hover:border-amber-500 transition-colors group">
       {/* Imagen con overlay de previsualización */}
@@ -29,6 +32,7 @@ export default function CardItem({ card, onAdd, onPreview, onSelectArt, isInDeck
           </span>
         </button>
 
+        {/* Badge de cantidad en el mazo */}
         {isInDeck && (
           <div className="absolute top-2 right-2 bg-amber-500 text-gray-900 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
             {count}
@@ -42,17 +46,32 @@ export default function CardItem({ card, onAdd, onPreview, onSelectArt, isInDeck
         {card.legalities?.commander === 'not_legal' && (
           <p className="text-red-400 text-xs mt-1">No legal en Commander</p>
         )}
+
         <div className="flex gap-1.5 mt-3">
+          {/* Botón − solo visible cuando la carta ya está en el mazo */}
+          {isInDeck && onRemove && (
+            <button
+              onClick={() => onRemove(card)}
+              aria-label={`Quitar una copia de ${card.name}`}
+              className="bg-gray-700 hover:bg-red-800 text-gray-300 hover:text-white text-xs font-bold w-8 py-1.5 rounded-lg transition-colors"
+            >
+              −
+            </button>
+          )}
+
           <button
             onClick={() => onAdd(card)}
+            aria-label={`Añadir ${card.name} al mazo`}
             className="flex-1 bg-amber-500 hover:bg-amber-400 text-gray-900 text-xs font-semibold py-1.5 rounded-lg transition-colors"
           >
-            + Añadir
+            {isInDeck ? '+ Otra copia' : '+ Añadir'}
           </button>
+
           {onSelectArt && (
             <button
               onClick={() => onSelectArt(card)}
               title="Elegir edición / arte"
+              aria-label={`Elegir edición de ${card.name}`}
               className="bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white text-xs px-2 py-1.5 rounded-lg transition-colors"
             >
               🎨

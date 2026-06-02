@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-950">
       <Navbar />
-      <main className="max-w-4xl mx-auto px-6 py-20 text-center">
+      <main id="main-content" className="max-w-4xl mx-auto px-6 py-20 text-center">
         <h1 className="text-5xl font-bold text-amber-400 mb-4">
           MTG Proxy Maker
         </h1>

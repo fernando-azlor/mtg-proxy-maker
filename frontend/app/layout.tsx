@@ -19,6 +19,10 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={geist.className}>
+        {/* Skip link: permite a usuarios de teclado/lector de pantalla saltar la navegación */}
+        <a href="#main-content" className="skip-link">
+          Saltar al contenido principal
+        </a>
         <AuthProvider>
           {children}
           <CookieBanner />

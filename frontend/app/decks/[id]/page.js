@@ -376,7 +376,7 @@ export default function DeckBuilderPage() {
   return (
     <div className="min-h-screen bg-gray-950">
       <Navbar />
-      <main className="max-w-screen-2xl mx-auto px-4 py-6">
+      <main id="main-content" className="max-w-screen-2xl mx-auto px-4 py-6">
 
         {/* Cabecera */}
         <div className="flex items-start justify-between mb-6 gap-4">
@@ -424,7 +424,7 @@ export default function DeckBuilderPage() {
                 <p>Busca cartas y añádelas aquí</p>
               </div>
             ) : (
-              <div className="space-y-1.5 overflow-y-auto flex-1" style={{ maxHeight: '620px' }}>
+              <div className="space-y-1.5 overflow-y-auto max-h-[580px]">
                 {deckCards.map(card => (
                   <div key={card.scryfallId}
                     className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${

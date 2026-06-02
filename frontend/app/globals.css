@@ -24,3 +24,25 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Skip link — oculto hasta recibir foco por teclado */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background: #f59e0b;   /* amber-400, mismo color de acento de la app */
+  color: #111827;         /* gray-900 */
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+  border-radius: 0 0 0.5rem 0;
+  transition: top 0.1s;
+}
+
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid #111827;
+  outline-offset: 2px;
+}

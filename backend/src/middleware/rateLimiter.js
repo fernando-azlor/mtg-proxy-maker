@@ -48,4 +48,45 @@ const guestExportLimiter = rateLimit({
   },
 });
 
-module.exports = { loginLimiter, registerLimiter, guestExportLimiter };
+// Limita consultas de ediciones/arte por carta: 20 req/min por IP.
+// Una carta popular (Lightning Bolt, Sol Ring) puede tener 80+ ediciones,
+// cada consulta hace 2 peticiones a Scryfall. Sin este límite un usuario
+// podría saturar nuestra IP contra Scryfall o hacer scraping masivo.
+const printingsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: {
+    error: 'Estás cargando demasiadas ediciones seguidas. Espera un momento.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn({
+      message: 'Rate limit alcanzado en printings',
+      ip: req.ip,
+      cardId: req.params.id || 'desconocido',
+    });
+    res.status(429).json(options.message);
+  },
+});
+
+// Limita importaciones masivas: 10 bulk-lookups/min por IP.
+// Cada petición puede lanzar hasta 4 batches de 75 cartas contra Scryfall.
+const bulkLookupLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: {
+    error: 'Demasiadas importaciones seguidas. Espera un minuto.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn({
+      message: 'Rate limit alcanzado en bulk-lookup',
+      ip: req.ip,
+    });
+    res.status(429).json(options.message);
+  },
+});
+
+module.exports = { loginLimiter, registerLimiter, guestExportLimiter, printingsLimiter, bulkLookupLimiter };

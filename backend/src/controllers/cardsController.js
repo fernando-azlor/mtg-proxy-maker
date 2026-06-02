@@ -1,4 +1,4 @@
-const { searchCards, getCardById, getCardPrintings } = require('../services/scryfallService');
+const { searchCards, getCardById, getCardPrintings, bulkLookupByNames } = require('../services/scryfallService');
 const { validationResult } = require('express-validator');
 const { logger } = require('../config/logger');
 
@@ -53,4 +53,25 @@ const getCardPrintingsController = async (req, res) => {
   }
 };
 
-module.exports = { search, getCard, getCardPrintingsController };
+const bulkLookup = async (req, res) => {
+  const { cards } = req.body;
+
+  // Validación de seguridad del array (la ruta ya valida tipos con express-validator,
+  // pero hacemos doble comprobación aquí para mayor robustez)
+  if (!Array.isArray(cards) || cards.length === 0) {
+    return res.status(400).json({ error: 'Envía un array "cards" con los nombres' });
+  }
+  if (cards.length > 300) {
+    return res.status(400).json({ error: 'Máximo 300 cartas por importación' });
+  }
+
+  try {
+    const result = await bulkLookupByNames(cards);
+    return res.status(200).json(result);
+  } catch (err) {
+    logger.error({ message: 'Error en bulk lookup', error: err.message });
+    return res.status(500).json({ error: 'Error al buscar las cartas' });
+  }
+};
+
+module.exports = { search, getCard, getCardPrintingsController, bulkLookup };

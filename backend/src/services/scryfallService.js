@@ -17,6 +17,18 @@ const validateScryfallUrl = (url) => {
   }
 };
 
+// Formatea una carta de Scryfall al esquema interno, minimizando datos expuestos
+const formatCard = (card) => ({
+  scryfallId: card.id,
+  name: card.name,
+  manaCost: card.mana_cost || '',
+  typeLine: card.type_line || '',
+  oracleText: card.oracle_text || '',
+  imageUrl: card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal || null,
+  imageUrlSmall: card.image_uris?.small || card.card_faces?.[0]?.image_uris?.small || null,
+  legalities: { commander: card.legalities?.commander || 'unknown' },
+});
+
 const searchCards = async (query, page = 1, colors = [], cmc = null) => {
   const parts = [];
 
@@ -60,19 +72,7 @@ const searchCards = async (query, page = 1, colors = [], cmc = null) => {
 
   const data = await response.json();
 
-  // Devolver solo los campos necesarios - minimizacion de datos
-  const cards = data.data.map((card) => ({
-    scryfallId: card.id,
-    name: card.name,
-    manaCost: card.mana_cost || '',
-    typeLine: card.type_line || '',
-    oracleText: card.oracle_text || '',
-    imageUrl: card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal || null,
-    imageUrlSmall: card.image_uris?.small || card.card_faces?.[0]?.image_uris?.small || null,
-    legalities: {
-      commander: card.legalities?.commander || 'unknown',
-    },
-  }));
+  const cards = data.data.map(formatCard);
 
   return {
     cards,
@@ -94,20 +94,7 @@ const getCardById = async (scryfallId) => {
     throw new Error(`Carta no encontrada: ${scryfallId}`);
   }
 
-  const card = await response.json();
-
-  return {
-    scryfallId: card.id,
-    name: card.name,
-    manaCost: card.mana_cost || '',
-    typeLine: card.type_line || '',
-    oracleText: card.oracle_text || '',
-    imageUrl: card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal || null,
-    imageUrlSmall: card.image_uris?.small || card.card_faces?.[0]?.image_uris?.small || null,
-    legalities: {
-      commander: card.legalities?.commander || 'unknown',
-    },
-  };
+  return formatCard(await response.json());
 };
 
 const getCardPrintings = async (scryfallId) => {
@@ -121,18 +108,10 @@ const getCardPrintings = async (scryfallId) => {
   if (!cardResponse.ok) throw new Error('Carta no encontrada');
   const card = await cardResponse.json();
 
-  // Buscamos todas las ediciones por nombre exacto
-  const url = new URL(`${SCRYFALL_BASE_URL}/cards/search`);
-  url.searchParams.set('q', `!"${card.name}"`);
-  url.searchParams.set('unique', 'prints');
-  url.searchParams.set('order', 'released');
-  url.searchParams.set('dir', 'desc');
-
-  const printsResponse = await fetch(url.toString());
-  if (!printsResponse.ok) throw new Error('Error obteniendo ediciones');
-  const data = await printsResponse.json();
-
-  const printings = data.data.map((p) => ({
+  // Buscamos todas las ediciones por nombre exacto, paginando hasta agotar resultados.
+  // Scryfall devuelve máximo 175 por página; cartas como tierras básicas tienen 400+.
+  // Límite de seguridad: máximo 10 páginas (1750 ediciones) para evitar bucles infinitos.
+  const formatPrinting = (p) => ({
     scryfallId: p.id,
     name: p.name,
     setCode: p.set.toUpperCase(),
@@ -145,9 +124,86 @@ const getCardPrintings = async (scryfallId) => {
     isBorderless: p.border_color === 'borderless',
     isPromo: p.promo || false,
     frameEffects: p.frame_effects || [],
-  }));
+  });
 
-  return { printings };
+  const allPrintings = [];
+  let nextUrl = new URL(`${SCRYFALL_BASE_URL}/cards/search`);
+  nextUrl.searchParams.set('q', `!"${card.name}"`);
+  nextUrl.searchParams.set('unique', 'prints');
+  nextUrl.searchParams.set('order', 'released');
+  nextUrl.searchParams.set('dir', 'desc');
+
+  const MAX_PAGES = 10;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const printsResponse = await fetch(nextUrl.toString());
+    if (!printsResponse.ok) throw new Error('Error obteniendo ediciones');
+    const data = await printsResponse.json();
+
+    allPrintings.push(...data.data.map(formatPrinting));
+
+    if (!data.has_more || !data.next_page) break;
+
+    nextUrl = new URL(data.next_page);
+    // Pausa de 100ms entre páginas para respetar el rate limit de Scryfall
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  return { printings: allPrintings };
 };
 
-module.exports = { searchCards, getCardById, getCardPrintings, validateScryfallUrl };
+// Búsqueda masiva por nombres usando el endpoint /cards/collection de Scryfall.
+// Procesa en batches de 75 (límite del endpoint) con una pausa de 100 ms
+// entre batches para respetar el rate limit de Scryfall (10 req/s).
+const bulkLookupByNames = async (names) => {
+  const BATCH_SIZE = 75;
+  const found = [];
+  const notFound = [];
+
+  for (let i = 0; i < names.length; i += BATCH_SIZE) {
+    const batch = names.slice(i, i + BATCH_SIZE);
+
+    // Sanitizar: solo el campo name, truncado a 200 chars, sin caracteres peligrosos
+    const identifiers = batch.map(({ name }) => ({
+      name: String(name).trim().slice(0, 200),
+    }));
+
+    let response;
+    try {
+      response = await fetch(`${SCRYFALL_BASE_URL}/cards/collection`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifiers }),
+      });
+    } catch {
+      batch.forEach(({ name }) => notFound.push({ name, reason: 'Error de red' }));
+      continue;
+    }
+
+    if (!response.ok) {
+      batch.forEach(({ name }) => notFound.push({ name, reason: 'Error de Scryfall' }));
+      continue;
+    }
+
+    const data = await response.json();
+
+    (data.data || []).forEach((card) => {
+      const entry =
+        batch.find(b => b.name.toLowerCase() === card.name.toLowerCase()) ||
+        batch.find(b => card.name.toLowerCase().startsWith(b.name.toLowerCase()));
+      found.push({ ...formatCard(card), quantity: entry?.quantity || 1 });
+    });
+
+    (data.not_found || []).forEach((nf) => {
+      notFound.push({ name: nf.name || 'Desconocida', reason: 'No encontrada en Scryfall' });
+    });
+
+    // Pausa entre batches para no saturar la API de Scryfall
+    if (i + BATCH_SIZE < names.length) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+  }
+
+  return { found, notFound };
+};
+
+module.exports = { searchCards, getCardById, getCardPrintings, bulkLookupByNames, validateScryfallUrl };

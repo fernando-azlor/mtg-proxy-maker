@@ -1,6 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../lib/api';
+
+// Cuántas ediciones se muestran a la vez; se cargan más al llegar al final del scroll
+const PAGE_SIZE = 30;
 
 function printingLabel(p) {
   const tags = [];
@@ -12,7 +15,7 @@ function printingLabel(p) {
   return tags.join(' · ') || null;
 }
 
-// ─── Overlay de zoom (por encima del propio modal) ───────────────────────────
+// ─── Overlay de zoom ──────────────────────────────────────────────────────────
 function ZoomOverlay({ printing, onClose }) {
   useEffect(() => {
     const h = (e) => { if (e.key === 'Escape') onClose(); };
@@ -41,21 +44,13 @@ function ZoomOverlay({ printing, onClose }) {
             Sin imagen
           </div>
         )}
-        {/* Info debajo */}
         <div className="text-center">
           <p className="text-white font-bold">{printing.name}</p>
           <p className="text-gray-400 text-sm">{printing.setName} · {printing.setCode} #{printing.collectorNumber}</p>
-          {printing.releasedAt && (
-            <p className="text-gray-500 text-xs">{printing.releasedAt.slice(0, 4)}</p>
-          )}
-          {printingLabel(printing) && (
-            <p className="text-amber-400 text-sm mt-0.5">{printingLabel(printing)}</p>
-          )}
+          {printing.releasedAt && <p className="text-gray-500 text-xs">{printing.releasedAt.slice(0, 4)}</p>}
+          {printingLabel(printing) && <p className="text-amber-400 text-sm mt-0.5">{printingLabel(printing)}</p>}
         </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-white text-sm transition-colors"
-        >
+        <button onClick={onClose} className="text-gray-400 hover:text-white text-sm transition-colors">
           ✕ Cerrar
         </button>
       </div>
@@ -63,14 +58,92 @@ function ZoomOverlay({ printing, onClose }) {
   );
 }
 
-// ─── Modal principal ─────────────────────────────────────────────────────────
+// ─── Tarjeta de edición con lazy-load por IntersectionObserver ────────────────
+// La imagen solo se descarga cuando la tarjeta entra en el viewport.
+// Imprescindible para cartas con 200+ ediciones (tierras básicas, Lightning Bolt…).
+function PrintingCard({ p, isSelected, onSelect, onZoom }) {
+  const [visible, setVisible] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
+      { threshold: 0.01 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const label = printingLabel(p);
+
+  return (
+    <div
+      ref={ref}
+      className="relative rounded-xl overflow-hidden"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <button type="button" onClick={() => onSelect(p)} className="w-full text-left focus:outline-none">
+        {isSelected && (
+          <div
+            className="absolute inset-0 rounded-xl pointer-events-none z-10"
+            style={{ boxShadow: 'inset 0 0 0 3px rgb(251 191 36)' }}
+          />
+        )}
+
+        {/* Imagen: solo se solicita cuando el Observer detecta visibilidad */}
+        {visible && p.imageUrlSmall ? (
+          <img
+            src={p.imageUrlSmall}
+            alt={`${p.name} — ${p.setName}`}
+            className="w-full aspect-[63/88] object-cover rounded-xl"
+          />
+        ) : (
+          <div className="w-full aspect-[63/88] bg-gray-800 rounded-xl flex items-center justify-center text-gray-500 text-xs p-2 text-center animate-pulse">
+            {!visible ? '' : 'Sin imagen'}
+          </div>
+        )}
+
+        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent px-2 py-2 rounded-b-xl">
+          <p className="text-white text-xs font-bold truncate">{p.setCode}</p>
+          {label && <p className="text-amber-400 text-xs truncate leading-tight">{label}</p>}
+        </div>
+
+        {isSelected && (
+          <div className="absolute top-2 right-2 bg-amber-400 rounded-full w-5 h-5 flex items-center justify-center z-20">
+            <span className="text-gray-900 text-xs font-bold">✓</span>
+          </div>
+        )}
+      </button>
+
+      {hovered && p.imageUrl && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onZoom(p); }}
+          title="Ampliar carta"
+          className="absolute top-2 left-2 z-20 bg-black/60 hover:bg-black/80 text-white rounded-full w-7 h-7 flex items-center justify-center transition-colors"
+          aria-label="Ampliar carta"
+        >
+          🔍
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Modal principal ──────────────────────────────────────────────────────────
 export default function ArtSelectorModal({ card, onConfirm, onClose }) {
-  const [printings, setPrintings] = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState('');
-  const [selected, setSelected]   = useState(null);
-  const [hovered, setHovered]     = useState(null);
-  const [zoomed, setZoomed]       = useState(null); // carta ampliada
+  const [printings, setPrintings]     = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState('');
+  const [selected, setSelected]       = useState(null);
+  const [hovered, setHovered]         = useState(null);
+  const [zoomed, setZoomed]           = useState(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const gridRef = useRef(null);
 
   useEffect(() => {
     const fetchPrintings = async () => {
@@ -88,7 +161,6 @@ export default function ArtSelectorModal({ card, onConfirm, onClose }) {
     fetchPrintings();
   }, [card.scryfallId]);
 
-  // Escape cierra el zoom primero; si no hay zoom, cierra el modal
   useEffect(() => {
     const handler = (e) => {
       if (e.key === 'Escape') {
@@ -99,6 +171,15 @@ export default function ArtSelectorModal({ card, onConfirm, onClose }) {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose, zoomed]);
+
+  // Carga las siguientes 30 ediciones al llegar cerca del final del scroll
+  const handleGridScroll = useCallback(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 60) {
+      setVisibleCount(c => Math.min(c + PAGE_SIZE, printings.length));
+    }
+  }, [printings.length]);
 
   const handleConfirm = () => {
     if (!selected) return;
@@ -112,6 +193,7 @@ export default function ArtSelectorModal({ card, onConfirm, onClose }) {
   };
 
   const preview = hovered || selected;
+  const visible = printings.slice(0, visibleCount);
 
   return (
     <>
@@ -142,7 +224,6 @@ export default function ArtSelectorModal({ card, onConfirm, onClose }) {
 
           {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
-          {/* Grid + panel lateral */}
           <div className="flex gap-4 flex-1 min-h-0">
 
             {/* Grid de ediciones */}
@@ -153,79 +234,40 @@ export default function ArtSelectorModal({ card, onConfirm, onClose }) {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto flex-1 pr-1">
-                {printings.map((p) => {
-                  const isSelected = selected?.scryfallId === p.scryfallId;
-                  const isHovered  = hovered?.scryfallId  === p.scryfallId;
-                  const label      = printingLabel(p);
-                  return (
-                    <div
+              <div
+                ref={gridRef}
+                onScroll={handleGridScroll}
+                className="overflow-y-auto flex-1 pr-1"
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {visible.map((p) => (
+                    <PrintingCard
                       key={p.scryfallId}
-                      className="relative rounded-xl overflow-hidden"
-                      onMouseEnter={() => setHovered(p)}
-                      onMouseLeave={() => setHovered(null)}
-                    >
-                      {/* Botón principal: seleccionar edición */}
+                      p={p}
+                      isSelected={selected?.scryfallId === p.scryfallId}
+                      onSelect={(p) => { setSelected(p); setHovered(null); }}
+                      onZoom={setZoomed}
+                    />
+                  ))}
+
+                  {/* Botón de carga manual como fallback */}
+                  {visibleCount < printings.length && (
+                    <div className="col-span-full text-center py-3">
                       <button
-                        type="button"
-                        onClick={() => setSelected(p)}
-                        className="w-full text-left focus:outline-none"
+                        onClick={() => setVisibleCount(c => Math.min(c + PAGE_SIZE, printings.length))}
+                        className="text-gray-400 hover:text-white text-sm transition-colors"
                       >
-                        {/* Borde de selección inset */}
-                        {isSelected && (
-                          <div className="absolute inset-0 rounded-xl pointer-events-none z-10"
-                               style={{ boxShadow: 'inset 0 0 0 3px rgb(251 191 36)' }} />
-                        )}
-
-                        {p.imageUrl ? (
-                          <img
-                            src={p.imageUrl}
-                            alt={`${p.name} — ${p.setName}`}
-                            className="w-full aspect-[63/88] object-cover rounded-xl"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full aspect-[63/88] bg-gray-800 rounded-xl flex items-center justify-center text-gray-500 text-xs p-2 text-center">
-                            Sin imagen
-                          </div>
-                        )}
-
-                        {/* Etiqueta inferior */}
-                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent px-2 py-2 rounded-b-xl">
-                          <p className="text-white text-xs font-bold truncate">{p.setCode}</p>
-                          {label && <p className="text-amber-400 text-xs truncate leading-tight">{label}</p>}
-                        </div>
-
-                        {/* Check */}
-                        {isSelected && (
-                          <div className="absolute top-2 right-2 bg-amber-400 rounded-full w-5 h-5 flex items-center justify-center z-20">
-                            <span className="text-gray-900 text-xs font-bold">✓</span>
-                          </div>
-                        )}
+                        Cargar más ({printings.length - visibleCount} restantes)
                       </button>
-
-                      {/* Botón lupa — aparece al hacer hover sobre la carta */}
-                      {isHovered && p.imageUrl && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setZoomed(p); }}
-                          title="Ampliar carta"
-                          className="absolute top-2 left-2 z-20 bg-black/60 hover:bg-black/80 text-white rounded-full w-7 h-7 flex items-center justify-center transition-colors"
-                          aria-label="Ampliar carta"
-                        >
-                          🔍
-                        </button>
-                      )}
                     </div>
-                  );
-                })}
+                  )}
+                </div>
               </div>
             )}
 
             {/* Panel de preview lateral */}
             {!loading && preview && (
               <div className="w-44 flex-shrink-0 flex flex-col gap-2">
-                {/* Imagen clicable para ampliar */}
                 <button
                   type="button"
                   onClick={() => preview.imageUrl && setZoomed(preview)}
@@ -240,7 +282,6 @@ export default function ArtSelectorModal({ card, onConfirm, onClose }) {
                         alt={preview.name}
                         className="w-full rounded-xl shadow-lg transition-transform group-hover:scale-[1.02]"
                       />
-                      {/* Icono lupa encima al hover */}
                       <div className="absolute inset-0 rounded-xl flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
                         <span className="opacity-0 group-hover:opacity-100 text-white text-2xl transition-opacity">🔍</span>
                       </div>
@@ -251,7 +292,6 @@ export default function ArtSelectorModal({ card, onConfirm, onClose }) {
                     </div>
                   )}
                 </button>
-
                 <div>
                   <p className="text-white text-xs font-bold">{preview.setName}</p>
                   <p className="text-gray-400 text-xs">{preview.setCode} · #{preview.collectorNumber}</p>
@@ -283,7 +323,6 @@ export default function ArtSelectorModal({ card, onConfirm, onClose }) {
         </div>
       </div>
 
-      {/* Overlay de zoom — z-[60], por encima del modal */}
       {zoomed && <ZoomOverlay printing={zoomed} onClose={() => setZoomed(null)} />}
     </>
   );

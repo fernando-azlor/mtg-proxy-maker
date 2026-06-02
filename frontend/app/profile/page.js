@@ -51,7 +51,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-950">
       <Navbar />
-      <main className="max-w-2xl mx-auto px-6 py-12">
+      <main id="main-content" className="max-w-2xl mx-auto px-6 py-12">
         <h1 className="text-2xl font-bold text-white mb-8">Mi perfil</h1>
 
         {error && (
